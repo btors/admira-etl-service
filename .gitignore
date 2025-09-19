@@ -21,5 +21,8 @@
 go.work
 go.work.sum
 
+# IntelliJ IDEA project files
+.idea/
+
 # env file
 .env
