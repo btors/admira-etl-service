@@ -65,9 +65,20 @@ Base URL: `http://localhost:8080`
 ### 1. Ingestar y Procesar Datos
 Activa el pipeline ETL.
 - **POST** `/ingest/run`
+- #### Sin filtro de fecha:
+
     ```bash
     curl -X POST http://localhost:8080/ingest/run
     ```
+
+- #### Con filtro de fecha:
+
+    ```bash
+  
+    curl -X POST "http://localhost:8080/ingest/run?from=2025-08-01&to=2025-08-31"
+    ```
+#### Parámetros de consulta:
+  since (opcional): Filtra los datos desde la fecha especificada en formato YYYY-MM-DD. Si no se proporciona, se procesarán todos los datos.
   **Response:**
     ```json
     {
@@ -75,7 +86,6 @@ Activa el pipeline ETL.
       "message": "ETL pipeline executed successfully"
     }
     ```
-
 ### 2. Obtener Métricas por Canal
 Consulta métricas agrupadas por canal.
 - **GET** `/metrics/channel?from=YYYY-MM-DD&to=YYYY-MM-DD&channel=...`

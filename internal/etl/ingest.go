@@ -45,7 +45,7 @@ func NewIngestor(adsURL, crmURL string) *Ingestor {
 }
 
 // FetchData fetches data from both Ads and CRM services concurrently.
-func (i *Ingestor) FetchData() ([]data.AdPerformance, []data.Opportunity, error) {
+func (i *Ingestor) FetchData(since *time.Time) ([]data.AdPerformance, []data.Opportunity, error) {
 	var wg sync.WaitGroup
 	wg.Add(2)
 
@@ -80,6 +80,13 @@ func (i *Ingestor) FetchData() ([]data.AdPerformance, []data.Opportunity, error)
 	}
 	if crmErr != nil {
 		return nil, nil, crmErr
+	}
+
+	// Apply filtering based on the 'since' parameter if provided
+	transformer := NewTransformer()
+	if since != nil {
+		adsData = transformer.FilterAdsByDate(adsData, since)
+		crmData = transformer.FilterCRMByDate(crmData, since)
 	}
 
 	return adsData, crmData, nil

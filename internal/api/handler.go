@@ -73,7 +73,21 @@ func (h *Handler) RunIngestion(c *gin.Context) {
 
 	log.Println("INFO: Received request to run ingestion.")
 
-	ads, crm, err := h.ingestor.FetchData()
+	// Parse the 'since' query parameter
+	sinceStr := c.Query("since")
+	var since *time.Time
+	if sinceStr != "" {
+		parsedSince, err := time.Parse("2006-01-02", sinceStr)
+		if err != nil {
+			log.Printf("ERROR: Invalid 'since' parameter: %v", err)
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid 'since' parameter. Use format YYYY-MM-DD."})
+			return
+		}
+		since = &parsedSince
+	}
+
+	// Call FetchData with the since parameter
+	ads, crm, err := h.ingestor.FetchData(since)
 	if err != nil {
 		log.Printf("ERROR: Data ingestion failed: %v", err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to ingest data"})
