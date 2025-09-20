@@ -3,6 +3,7 @@ package data
 
 import "time"
 
+// AdPerformance representa el rendimiento de un anuncio publicitario.
 type AdPerformance struct {
 	Date        string  `json:"date"`
 	CampaignID  string  `json:"campaign_id"`
@@ -15,6 +16,7 @@ type AdPerformance struct {
 	UTMMedium   string  `json:"utm_medium"`
 }
 
+// Opportunity representa una oportunidad de negocio en el CRM.
 type Opportunity struct {
 	OpportunityID string    `json:"opportunity_id"`
 	ContactEmail  string    `json:"contact_email"`
@@ -26,7 +28,7 @@ type Opportunity struct {
 	UTMMedium     string    `json:"utm_medium"`
 }
 
-// EnrichedMetric - VERSIÓN CORREGIDA Y COMPLETA
+// EnrichedMetric representa una métrica enriquecida que combina datos de rendimiento y oportunidades.
 type EnrichedMetric struct {
 	Date          time.Time
 	Channel       string
@@ -43,7 +45,7 @@ type EnrichedMetric struct {
 	Revenue       float64
 	CPC           float64
 	CPA           float64
-	CVRLeadToOpp  float64 // <--- CAMBIO: CAMPO AÑADIDO
+	CVRLeadToOpp  float64
 	CVROppToWon   float64
 	ROAS          float64
 }

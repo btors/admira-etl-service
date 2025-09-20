@@ -78,7 +78,7 @@ func (h *Handler) RunIngestion(c *gin.Context) {
 	// Registra en los logs que se recibió una solicitud para ejecutar la ingesta
 	log.Println("INFO: Received request to run ingestion.")
 
-	// Intenta analizar el parámetro de consulta 'since' para determinar la fecha de inicio
+	// Validar el parámetro 'since'
 	sinceStr := c.Query("since")
 	var since *time.Time
 	if sinceStr != "" {
@@ -92,7 +92,7 @@ func (h *Handler) RunIngestion(c *gin.Context) {
 		since = &parsedSince
 	}
 
-	// Llama al método FetchData para obtener los datos desde la fecha especificada
+	// Obtener datos de Ads y CRM
 	ads, crm, err := h.ingestor.FetchData(since)
 	if err != nil {
 		log.Printf("ERROR: Data ingestion failed: %v", err)
@@ -137,19 +137,23 @@ func (h *Handler) Readyz(c *gin.Context) {
 
 // GetMetricsByChannel es el manejador para GET /metrics/channel.
 func (h *Handler) GetMetricsByChannel(c *gin.Context) {
+	// Middleware para registrar métricas de Prometheus
 	prometheusMiddleware("/metrics/channel")(c)
 
+	// Recuperar y validar los parámetros de consulta
 	channel := c.Query("channel")
 	fromStr := c.Query("from")
 	toStr := c.Query("to")
 	limitStr := c.DefaultQuery("limit", "10")
 	offsetStr := c.DefaultQuery("offset", "0")
 
+	// Validar que los parámetros obligatorios no estén vacíos
 	if channel == "" || fromStr == "" || toStr == "" {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "missing required parameters: channel, from, to"})
 		return
 	}
 
+	// Convertir los parámetros 'from' y 'to' a formato de fecha
 	from, err := time.Parse("2006-01-02", fromStr)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid 'from' date format, use YYYY-MM-DD"})
@@ -161,6 +165,7 @@ func (h *Handler) GetMetricsByChannel(c *gin.Context) {
 		return
 	}
 
+	// Validar y convertir los parámetros de paginación
 	limit, err := strconv.Atoi(limitStr)
 	if err != nil || limit <= 0 {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid 'limit' parameter"})
@@ -172,6 +177,7 @@ func (h *Handler) GetMetricsByChannel(c *gin.Context) {
 		return
 	}
 
+	// Recuperar métricas del repositorio
 	metrics, err := h.repo.GetMetricsByChannel(channel, from, to, limit, offset)
 	if err != nil {
 		log.Printf("ERROR: Failed to retrieve metrics by channel: %v", err)
@@ -179,24 +185,29 @@ func (h *Handler) GetMetricsByChannel(c *gin.Context) {
 		return
 	}
 
+	// Devolver las métricas en formato JSON
 	c.JSON(http.StatusOK, metrics)
 }
 
-// GetMetricsByFunnel with pagination
+// GetMetricsByFunnel es el manejador para el endpoint GET /metrics/funnel.
 func (h *Handler) GetMetricsByFunnel(c *gin.Context) {
+	// Middleware para registrar métricas de Prometheus
 	prometheusMiddleware("/metrics/funnel")(c)
 
+	// Recuperar y validar los parámetros de consulta
 	utmCampaign := c.Query("utm_campaign")
 	fromStr := c.Query("from")
 	toStr := c.Query("to")
 	limitStr := c.DefaultQuery("limit", "10")
 	offsetStr := c.DefaultQuery("offset", "0")
 
+	// Validar que los parámetros obligatorios no estén vacíos
 	if utmCampaign == "" || fromStr == "" || toStr == "" {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "missing required parameters: utm_campaign, from, to"})
 		return
 	}
 
+	// Convertir los parámetros 'from' y 'to' a formato de fecha
 	from, err := time.Parse("2006-01-02", fromStr)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid 'from' date format, use YYYY-MM-DD"})
@@ -208,6 +219,7 @@ func (h *Handler) GetMetricsByFunnel(c *gin.Context) {
 		return
 	}
 
+	// Validar y convertir los parámetros de paginación
 	limit, err := strconv.Atoi(limitStr)
 	if err != nil || limit <= 0 {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid 'limit' parameter"})
@@ -219,6 +231,7 @@ func (h *Handler) GetMetricsByFunnel(c *gin.Context) {
 		return
 	}
 
+	// Recuperar métricas del repositorio
 	metrics, err := h.repo.GetMetricsByFunnel(utmCampaign, from, to, limit, offset)
 	if err != nil {
 		log.Printf("ERROR: Failed to retrieve metrics by funnel: %v", err)
@@ -226,29 +239,32 @@ func (h *Handler) GetMetricsByFunnel(c *gin.Context) {
 		return
 	}
 
+	// Devolver las métricas en formato JSON
 	c.JSON(http.StatusOK, metrics)
 }
 
 // RunExport es el manejador para el endpoint POST /export/run.
 func (h *Handler) RunExport(c *gin.Context) {
+	// Middleware para registrar métricas de Prometheus
 	prometheusMiddleware("/export/run")(c)
 
 	log.Println("INFO: Received request to run export.")
 
-	// Parse the 'date' query parameter
+	// Validar y analizar el parámetro de consulta 'date'
 	dateStr := c.Query("date")
 	if dateStr == "" {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "missing required parameter: date"})
 		return
 	}
 
+	// Convertir el parámetro 'date' al formato de fecha
 	exportDate, err := time.Parse("2006-01-02", dateStr)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid 'date' format, use YYYY-MM-DD"})
 		return
 	}
 
-	// Retrieve all metrics and filter by the specified date
+	// Recuperar todas las métricas del repositorio
 	allMetrics, err := h.repo.GetAllMetrics()
 	if err != nil {
 		log.Printf("ERROR: Failed to retrieve metrics from repository: %v", err)
@@ -256,6 +272,7 @@ func (h *Handler) RunExport(c *gin.Context) {
 		return
 	}
 
+	// Filtrar las métricas por la fecha especificada
 	var filteredMetrics []data.EnrichedMetric
 	for _, metric := range allMetrics {
 		if metric.Date.Equal(exportDate) {
@@ -263,13 +280,14 @@ func (h *Handler) RunExport(c *gin.Context) {
 		}
 	}
 
+	// Verificar si no se encontraron métricas para la fecha especificada
 	if len(filteredMetrics) == 0 {
 		log.Printf("WARN: No metrics found for the specified date: %s", dateStr)
 		c.JSON(http.StatusNoContent, gin.H{"status": "No metrics found for the specified date."})
 		return
 	}
 
-	// Export the filtered metrics
+	// Exportar las métricas filtradas
 	if err := h.exporter.ExportMetrics(filteredMetrics); err != nil {
 		log.Printf("ERROR: Export failed: %v", err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to export data"})
@@ -280,7 +298,7 @@ func (h *Handler) RunExport(c *gin.Context) {
 	c.JSON(http.StatusAccepted, gin.H{"status": "Export process completed successfully."})
 }
 
-// Healthz es un endpoint simple para verificar que el servicio está vivo.
+// Healthz es un endpoint que verifica la disponibilidad del servicio.
 func (h *Handler) Healthz(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"status": "ok"})
 }
