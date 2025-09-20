@@ -75,7 +75,7 @@ Activa el pipeline ETL.
 
     ```bash
   
-    curl -X POST "http://localhost:8080/ingest/run?from=2025-08-01&to=2025-08-31"
+    curl -X POST "http://localhost:8080/ingest/run?since=2025-08-01"
     ```
 #### Parámetros de consulta:
   since (opcional): Filtra los datos desde la fecha especificada en formato YYYY-MM-DD. Si no se proporciona, se procesarán todos los datos.

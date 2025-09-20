@@ -48,11 +48,15 @@ type Handler struct {
 // Middleware para medir métricas Prometheus
 func prometheusMiddleware(endpoint string) gin.HandlerFunc {
 	return func(c *gin.Context) {
+		// Registra el tiempo de inicio de la solicitud
 		start := time.Now()
-		c.Next()
+		c.Next() // Continúa con el procesamiento de la solicitud
+		// Calcula la duración de la solicitud
 		duration := time.Since(start).Seconds()
 
+		// Incrementa el contador de solicitudes para el endpoint y metodo HTTP
 		requestsTotal.WithLabelValues(endpoint, c.Request.Method).Inc()
+		// Registra la duración de la solicitud en el histograma
 		requestDuration.WithLabelValues(endpoint).Observe(duration)
 	}
 }
@@ -71,14 +75,16 @@ func NewHandler(repo data.MetricRepository, ingestor *etl.Ingestor, transformer 
 func (h *Handler) RunIngestion(c *gin.Context) {
 	prometheusMiddleware("/ingest/run")(c)
 
+	// Registra en los logs que se recibió una solicitud para ejecutar la ingesta
 	log.Println("INFO: Received request to run ingestion.")
 
-	// Parse the 'since' query parameter
+	// Intenta analizar el parámetro de consulta 'since' para determinar la fecha de inicio
 	sinceStr := c.Query("since")
 	var since *time.Time
 	if sinceStr != "" {
 		parsedSince, err := time.Parse("2006-01-02", sinceStr)
 		if err != nil {
+			// Devuelve un error si el formato de la fecha es inválido
 			log.Printf("ERROR: Invalid 'since' parameter: %v", err)
 			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid 'since' parameter. Use format YYYY-MM-DD."})
 			return
@@ -86,7 +92,7 @@ func (h *Handler) RunIngestion(c *gin.Context) {
 		since = &parsedSince
 	}
 
-	// Call FetchData with the since parameter
+	// Llama al método FetchData para obtener los datos desde la fecha especificada
 	ads, crm, err := h.ingestor.FetchData(since)
 	if err != nil {
 		log.Printf("ERROR: Data ingestion failed: %v", err)
@@ -94,6 +100,7 @@ func (h *Handler) RunIngestion(c *gin.Context) {
 		return
 	}
 
+	// Combina y calcula las métricas a partir de los datos obtenidos
 	enrichedData, err := h.transformer.CombineAndCalculateMetrics(ads, crm)
 	if err != nil {
 		log.Printf("ERROR: Data transformation failed: %v", err)
@@ -101,20 +108,23 @@ func (h *Handler) RunIngestion(c *gin.Context) {
 		return
 	}
 
+	// Guarda las métricas enriquecidas en el repositorio
 	for _, metric := range enrichedData {
 		if err := h.repo.Save(metric); err != nil {
 			log.Printf("WARN: Failed to save metric for campaign %s: %v", metric.CampaignID, err)
 		}
 	}
 
+	// Registra en los logs que el proceso de ingesta se completó exitosamente
 	log.Printf("INFO: Ingestion process completed successfully. Processed %d metrics.", len(enrichedData))
 
+	// Devuelve una respuesta indicando que el proceso se completó
 	c.JSON(http.StatusAccepted, gin.H{"status": "Ingestion process completed successfully."})
 }
 
-// Readyz is an endpoint to verify the readiness of the service.
+// Readyz es un endpoint para verificar la disponibilidad del servicio
 func (h *Handler) Readyz(c *gin.Context) {
-	// Example readiness check: Verify repository is accessible
+	// Verifica si el repositorio está accesible
 	_, err := h.repo.GetAllMetrics()
 	if err != nil {
 		log.Printf("ERROR: Readiness check failed: %v", err)
