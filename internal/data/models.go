@@ -1,8 +1,8 @@
+// internal/data/models.go
 package data
 
 import "time"
 
-// AdPerformance represents the performance metrics of an advertisement.
 type AdPerformance struct {
 	Date        string  `json:"date"`
 	CampaignID  string  `json:"campaign_id"`
@@ -15,7 +15,6 @@ type AdPerformance struct {
 	UTMMedium   string  `json:"utm_medium"`
 }
 
-// Opportunity represents a sales opportunity.
 type Opportunity struct {
 	OpportunityID string    `json:"opportunity_id"`
 	ContactEmail  string    `json:"contact_email"`
@@ -27,11 +26,14 @@ type Opportunity struct {
 	UTMMedium     string    `json:"utm_medium"`
 }
 
-// EnrichedMetric represents an enriched metric combining ad performance and opportunity data.
+// EnrichedMetric - VERSIÓN CORREGIDA Y COMPLETA
 type EnrichedMetric struct {
 	Date          time.Time
 	Channel       string
 	CampaignID    string
+	UTMCampaign   string // Se mantienen para filtros internos
+	UTMSource     string // Se mantienen para filtros internos
+	UTMMedium     string // Se mantienen para filtros internos
 	Clicks        int
 	Impressions   int
 	Cost          float64
@@ -39,8 +41,9 @@ type EnrichedMetric struct {
 	Opportunities int
 	ClosedWon     int
 	Revenue       float64
-	CPC           float64 // Cost Per Click
-	CPA           float64 // Cost Per Acquisition (Lead)
-	CVROppToWon   float64 // Conversion Rate from Opportunity to Closed Won
-	ROAS          float64 // Return on Ad Spend
+	CPC           float64
+	CPA           float64
+	CVRLeadToOpp  float64 // <--- CAMBIO: CAMPO AÑADIDO
+	CVROppToWon   float64
+	ROAS          float64
 }
