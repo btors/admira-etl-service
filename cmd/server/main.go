@@ -1,13 +1,14 @@
 package main
 
 import (
+	"log"
+
 	"github.com/btors/admira-etl/internal/api"
 	"github.com/btors/admira-etl/internal/config"
 	"github.com/btors/admira-etl/internal/data"
 	"github.com/btors/admira-etl/internal/etl"
 	"github.com/gin-gonic/gin"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
-	"log"
 )
 
 func main() {

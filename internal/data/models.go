@@ -1,4 +1,4 @@
-// internal/data/models.go
+// Package data internal/data/models.go
 package data
 
 import "time"

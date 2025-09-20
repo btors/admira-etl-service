@@ -1,9 +1,10 @@
-// internal/config/config.go
+// Package config internal/config/config.go
 package config
 
 import (
-	"github.com/joho/godotenv"
 	"os"
+
+	"github.com/joho/godotenv"
 )
 
 // Config holds the configuration values

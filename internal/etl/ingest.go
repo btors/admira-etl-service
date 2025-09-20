@@ -1,13 +1,15 @@
+// Package etl internal/etl/ingest.go
 package etl
 
 import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/btors/admira-etl/internal/data"
 	"net/http"
 	"sync"
 	"time"
+
+	"github.com/btors/admira-etl/internal/data"
 )
 
 // Ingestor handles data ingestion from external services.

@@ -1,6 +1,6 @@
 # Dockerfile
 # Usa una imagen base de Go para construir tu aplicación
-FROM golang:1.20-alpine AS builder
+FROM golang:1.25-alpine AS builder
 
 # Establece el directorio de trabajo
 WORKDIR /app

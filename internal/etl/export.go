@@ -1,4 +1,4 @@
-// internal/etl/export.go
+// Package etl internal/etl/export.go
 package etl
 
 import (

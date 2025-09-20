@@ -1,4 +1,4 @@
-// internal/etl/transform.go
+// Package etl internal/etl/transform.go
 package etl
 
 import (
@@ -114,7 +114,6 @@ func (t *Transformer) CombineAndCalculateMetrics(adsData []data.AdPerformance, c
 	return results, nil
 }
 
-// internal/etl/transform.go
 func (t *Transformer) FilterAdsByDate(ads []data.AdPerformance, since *time.Time) []data.AdPerformance {
 	var filtered []data.AdPerformance
 	for _, ad := range ads {

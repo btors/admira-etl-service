@@ -1,4 +1,4 @@
-// internal/api/handler.go
+// Package api internal/api/handler.go
 package api
 
 import (
