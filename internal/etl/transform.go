@@ -2,6 +2,7 @@
 package etl
 
 import (
+	"errors"
 	"fmt"
 	"log"
 	"strings"
@@ -20,6 +21,10 @@ func NewTransformer() *Transformer {
 
 // CombineAndCalculateMetrics cruza los datos de Ads y CRM y calcula las métricas.
 func (t *Transformer) CombineAndCalculateMetrics(adsData []data.AdPerformance, crmData []data.Opportunity) ([]data.EnrichedMetric, error) {
+
+	if len(adsData) == 0 {
+		return nil, errors.New("ads data is empty")
+	}
 	// Usamos un mapa para buscar oportunidades de CRM eficientemente por su clave UTM.
 	crmMap := make(map[string][]data.Opportunity)
 	for _, opp := range crmData {
@@ -74,19 +79,33 @@ func (t *Transformer) CombineAndCalculateMetrics(adsData []data.AdPerformance, c
 		// Calculamos las métricas derivadas de forma segura.
 		if metric.Clicks > 0 {
 			metric.CPC = metric.Cost / float64(metric.Clicks)
+		} else {
+			metric.CPC = 0.0
 		}
+
 		if metric.Leads > 0 {
 			metric.CPA = metric.Cost / float64(metric.Leads)
+		} else {
+			metric.CPA = 0.0
 		}
+
 		if metric.Leads > 0 {
 			// Asegúrate de que la conversión a float64 se hace en ambos números ANTES de dividir.
 			metric.CVRLeadToOpp = float64(metric.Opportunities) / float64(metric.Leads)
+		} else {
+			metric.CVRLeadToOpp = 0.0
 		}
+
 		if metric.Opportunities > 0 {
 			metric.CVROppToWon = float64(metric.ClosedWon) / float64(metric.Opportunities)
+		} else {
+			metric.CVROppToWon = 0.0
 		}
+
 		if metric.Cost > 0 {
 			metric.ROAS = metric.Revenue / metric.Cost
+		} else {
+			metric.ROAS = 0.0
 		}
 
 		results = append(results, metric)
@@ -95,8 +114,42 @@ func (t *Transformer) CombineAndCalculateMetrics(adsData []data.AdPerformance, c
 	return results, nil
 }
 
+// internal/etl/transform.go
+func (t *Transformer) FilterAdsByDate(ads []data.AdPerformance, since *time.Time) []data.AdPerformance {
+	var filtered []data.AdPerformance
+	for _, ad := range ads {
+		adDate, err := time.Parse("2006-01-02", ad.Date)
+		if err == nil && (since == nil || !adDate.Before(*since)) {
+			filtered = append(filtered, ad)
+		}
+	}
+	return filtered
+}
+
+func (t *Transformer) FilterCRMByDate(crm []data.Opportunity, since *time.Time) []data.Opportunity {
+	var filtered []data.Opportunity
+	for _, opp := range crm {
+		if since == nil || !opp.CreatedAt.Before(*since) {
+			filtered = append(filtered, opp)
+		}
+	}
+	return filtered
+}
+
 // createUTMKey genera una clave consistente para el cruce, normalizando los datos.
 func (t *Transformer) createUTMKey(campaign, source, medium string) string {
+	// Asignar valores predeterminados si faltan UTMs
+	if strings.TrimSpace(campaign) == "" {
+		campaign = "unknown"
+	}
+	if strings.TrimSpace(source) == "" {
+		source = "unknown"
+	}
+	if strings.TrimSpace(medium) == "" {
+		medium = "unknown"
+	}
+
+	// Normalizar y generar la clave
 	c := strings.ToLower(strings.TrimSpace(campaign))
 	s := strings.ToLower(strings.TrimSpace(source))
 	m := strings.ToLower(strings.TrimSpace(medium))

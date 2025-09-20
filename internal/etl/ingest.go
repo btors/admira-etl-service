@@ -85,17 +85,48 @@ func (i *Ingestor) FetchData() ([]data.AdPerformance, []data.Opportunity, error)
 
 // fetchAndDecode performs the HTTP GET request and decodes the JSON response.
 func (i *Ingestor) fetchAndDecode(url string, target interface{}) error {
-	req, err := http.NewRequestWithContext(context.Background(), "GET", url, nil)
-	if err != nil {
-		return err
+	const maxRetries = 3
+	const baseDelay = 500 * time.Millisecond
+
+	for attempt := 1; attempt <= maxRetries; attempt++ {
+		// Create a context with timeout for the request
+		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+		defer cancel()
+
+		req, err := http.NewRequestWithContext(ctx, "GET", url, nil)
+		if err != nil {
+			return fmt.Errorf("failed to create request: %w", err)
+		}
+
+		resp, err := i.client.Do(req)
+		if err != nil {
+			if attempt < maxRetries {
+				time.Sleep(baseDelay * time.Duration(1<<attempt)) // Exponential backoff
+				continue
+			}
+			return fmt.Errorf("request failed after %d attempts: %w", attempt, err)
+		}
+
+		defer resp.Body.Close()
+		if resp.StatusCode != http.StatusOK {
+			if attempt < maxRetries {
+				time.Sleep(baseDelay * time.Duration(1<<attempt)) // Exponential backoff
+				continue
+			}
+			return fmt.Errorf("received non-200 status code: %d", resp.StatusCode)
+		}
+
+		// Decode the response body
+		if err := json.NewDecoder(resp.Body).Decode(target); err != nil {
+			if attempt < maxRetries {
+				time.Sleep(baseDelay * time.Duration(1<<attempt)) // Exponential backoff
+				continue
+			}
+			return fmt.Errorf("failed to decode response: %w", err)
+		}
+
+		return nil // Success
 	}
-	resp, err := i.client.Do(req)
-	if err != nil {
-		return err
-	}
-	defer resp.Body.Close()
-	if resp.StatusCode != http.StatusOK {
-		return fmt.Errorf("received non-200 status code: %d", resp.StatusCode)
-	}
-	return json.NewDecoder(resp.Body).Decode(target)
+
+	return fmt.Errorf("exceeded maximum retries for URL: %s", url)
 }

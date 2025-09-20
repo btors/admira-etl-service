@@ -1,47 +1,54 @@
-// cmd/server/main.go
 package main
 
 import (
-	"log"
-
-	// ¡Añade el import de data!
+	"github.com/btors/admira-etl/internal/api"
 	"github.com/btors/admira-etl/internal/config"
 	"github.com/btors/admira-etl/internal/data"
 	"github.com/btors/admira-etl/internal/etl"
+	"github.com/gin-gonic/gin"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
+	"log"
 )
 
 func main() {
+	// 1. Cargar configuración
 	cfg, err := config.Load()
 	if err != nil {
 		log.Fatalf("FATAL: could not load config: %v", err)
 	}
 
-	// --- Ingesta y Transformación (como antes) ---
-	log.Println("INFO: Starting data ingestion...")
-	ingestor := etl.NewIngestor(cfg.AdsAPIURL, cfg.CrmAPIURL)
-	ads, crm, err := ingestor.FetchData()
-	if err != nil {
-		log.Fatalf("FATAL: data ingestion failed: %v", err)
-	}
-	log.Printf("INFO: Ingestion successful. Fetched %d ad records and %d crm records.", len(ads), len(crm))
-
-	log.Println("INFO: Starting data transformation...")
-	transformer := etl.NewTransformer()
-	enrichedData, err := transformer.CombineAndCalculateMetrics(ads, crm)
-	if err != nil {
-		log.Fatalf("FATAL: data transformation failed: %v", err)
-	}
-	log.Printf("INFO: Transformation successful. Generated %d enriched metrics.", len(enrichedData))
-
-	// --- Carga (¡nuevo!) ---
-	log.Println("INFO: Loading data into repository...")
+	// 2. Inicializar dependencias
 	repo := data.NewInMemoryRepository()
-	for _, metric := range enrichedData {
-		if err := repo.Save(metric); err != nil {
-			log.Printf("WARN: could not save metric for campaign %s: %v", metric.CampaignID, err)
-		}
+	ingestor := etl.NewIngestor(cfg.AdsAPIURL, cfg.CrmAPIURL)
+	transformer := etl.NewTransformer()
+	exporter := etl.NewExporter(cfg.SinkURL, cfg.SinkSecret)
+
+	// 3. Inyectar dependencias en el Handler de la API
+	apiHandler := api.NewHandler(repo, ingestor, transformer, exporter)
+
+	// 4. Configurar el router y los endpoints
+	router := gin.Default()
+
+	// Endpoint de Observabilidad
+	router.GET("/healthz", apiHandler.Healthz)
+	router.GET("/readyz", apiHandler.Readyz)
+
+	// Endpoint de métricas Prometheus
+	router.GET("/metrics", gin.WrapH(promhttp.Handler()))
+
+	// Endpoint de Ingesta
+	router.POST("/ingest/run", apiHandler.RunIngestion)
+
+	// Endpoints de Métricas
+	router.GET("/metrics/channel", apiHandler.GetMetricsByChannel)
+	router.GET("/metrics/funnel", apiHandler.GetMetricsByFunnel)
+
+	// Endpoint de Exportación
+	router.POST("/export/run", apiHandler.RunExport)
+
+	// 5. Iniciar el servidor
+	log.Printf("INFO: Server starting on port %s", cfg.Port)
+	if err := router.Run(":" + cfg.Port); err != nil {
+		log.Fatalf("FATAL: could not start server: %v", err)
 	}
-	// Este log no es muy útil en la implementación actual, pero sería clave
-	// si estuviéramos guardando en una base de datos real.
-	log.Printf("INFO: Successfully saved %d enriched metrics to the repository.", len(enrichedData))
 }
