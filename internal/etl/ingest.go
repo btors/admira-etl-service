@@ -14,16 +14,16 @@ import (
 
 // Ingestor es una estructura que maneja la ingesta de datos desde servicios externos.
 type Ingestor struct {
-	adsURL string       // URL del servicio de Ads
-	crmURL string       // URL del servicio de CRM
-	client *http.Client // Cliente HTTP para realizar solicitudes
+	adsURL string
+	crmURL string
+	client *http.Client
 }
 
 // adsAPIResponse representa la estructura de la respuesta del servicio de anuncios.
 type adsAPIResponse struct {
 	External struct {
 		Ads struct {
-			Performance []data.AdPerformance `json:"performance"` // Lista de métricas de rendimiento de anuncios
+			Performance []data.AdPerformance `json:"performance"`
 		} `json:"ads"`
 	} `json:"external"`
 }
@@ -40,22 +40,21 @@ type crmAPIResponse struct {
 // NewIngestor crea y devuelve una nueva instancia de Ingestor.
 func NewIngestor(adsURL, crmURL string) *Ingestor {
 	return &Ingestor{
-		adsURL: adsURL,                                  // Asigna la URL del servicio de Ads
-		crmURL: crmURL,                                  // Asigna la URL del servicio de CRM
-		client: &http.Client{Timeout: 10 * time.Second}, // Configura un tiempo de espera de 10 segundos para las solicitudes HTTP.
+		adsURL: adsURL,
+		crmURL: crmURL,
+		client: &http.Client{Timeout: 10 * time.Second},
 	}
 }
 
 // FetchData obtiene datos de los servicios de anuncios y CRM de forma concurrente.
 func (i *Ingestor) FetchData(since *time.Time) ([]data.AdPerformance, []data.Opportunity, error) {
-	var wg sync.WaitGroup // WaitGroup para esperar a que ambas solicitudes terminen
-	wg.Add(2)             // Añade dos tareas al WaitGroup
+	var wg sync.WaitGroup
+	wg.Add(2)
 
-	var adsData []data.AdPerformance // Variable para almacenar los datos de anuncios
-	var crmData []data.Opportunity   // Variable para almacenar los datos de CRM
-	var adsErr, crmErr error         // Variables para capturar errores
+	var adsData []data.AdPerformance
+	var crmData []data.Opportunity
+	var adsErr, crmErr error
 
-	// Goroutine para obtener datos del servicio de anuncios.
 	go func() {
 		defer wg.Done()
 		var adsResponse adsAPIResponse
@@ -66,7 +65,6 @@ func (i *Ingestor) FetchData(since *time.Time) ([]data.AdPerformance, []data.Opp
 		adsData = adsResponse.External.Ads.Performance
 	}()
 
-	// Goroutine para obtener datos del servicio CRM.
 	go func() {
 		defer wg.Done()
 		var crmResponse crmAPIResponse
@@ -77,7 +75,7 @@ func (i *Ingestor) FetchData(since *time.Time) ([]data.AdPerformance, []data.Opp
 		crmData = crmResponse.External.CRM.Opportunities
 	}()
 
-	wg.Wait() // Espera a que ambas goroutines terminen
+	wg.Wait()
 
 	if adsErr != nil {
 		return nil, nil, adsErr
@@ -98,12 +96,12 @@ func (i *Ingestor) FetchData(since *time.Time) ([]data.AdPerformance, []data.Opp
 
 // fetchAndDecode realiza una solicitud HTTP GET y decodifica la respuesta JSON.
 func (i *Ingestor) fetchAndDecode(url string, target interface{}) error {
-	const maxRetries = 3                     // Número máximo de reintentos para solicitudes fallidas
-	const baseDelay = 500 * time.Millisecond // Retraso base para el backoff exponencial
+	const maxRetries = 3
+	const baseDelay = 500 * time.Millisecond
 
 	// Intenta realizar la solicitud hasta el número máximo de reintentos.
 	for attempt := 1; attempt <= maxRetries; attempt++ {
-		// Crea un contexto con tiempo de espera para la solicitud.
+
 		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 		defer cancel()
 
@@ -133,7 +131,6 @@ func (i *Ingestor) fetchAndDecode(url string, target interface{}) error {
 			return fmt.Errorf("received non-200 status code: %d", resp.StatusCode)
 		}
 
-		// Decodifica el cuerpo de la respuesta en el destino proporcionado.
 		if err := json.NewDecoder(resp.Body).Decode(target); err != nil {
 			if attempt < maxRetries {
 				time.Sleep(baseDelay * time.Duration(1<<attempt)) // Exponential backoff
@@ -142,7 +139,7 @@ func (i *Ingestor) fetchAndDecode(url string, target interface{}) error {
 			return fmt.Errorf("failed to decode response: %w", err)
 		}
 
-		return nil // Retorna nil si la solicitud y decodificación fueron exitosas
+		return nil
 	}
 
 	return fmt.Errorf("exceeded maximum retries for URL: %s", url)

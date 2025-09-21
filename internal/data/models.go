@@ -3,7 +3,6 @@ package data
 
 import "time"
 
-// AdPerformance representa el rendimiento de un anuncio publicitario.
 type AdPerformance struct {
 	Date        string  `json:"date"`
 	CampaignID  string  `json:"campaign_id"`
@@ -16,7 +15,6 @@ type AdPerformance struct {
 	UTMMedium   string  `json:"utm_medium"`
 }
 
-// Opportunity representa una oportunidad de negocio en el CRM.
 type Opportunity struct {
 	OpportunityID string    `json:"opportunity_id"`
 	ContactEmail  string    `json:"contact_email"`

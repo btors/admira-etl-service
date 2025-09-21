@@ -48,15 +48,11 @@ type Handler struct {
 // Middleware para medir métricas Prometheus
 func prometheusMiddleware(endpoint string) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		// Registra el tiempo de inicio de la solicitud
 		start := time.Now()
-		c.Next() // Continúa con el procesamiento de la solicitud
-		// Calcula la duración de la solicitud
+		c.Next()
 		duration := time.Since(start).Seconds()
 
-		// Incrementa el contador de solicitudes para el endpoint y metodo HTTP
 		requestsTotal.WithLabelValues(endpoint, c.Request.Method).Inc()
-		// Registra la duración de la solicitud en el histograma
 		requestDuration.WithLabelValues(endpoint).Observe(duration)
 	}
 }
@@ -75,7 +71,6 @@ func NewHandler(repo data.MetricRepository, ingestor *etl.Ingestor, transformer 
 func (h *Handler) RunIngestion(c *gin.Context) {
 	prometheusMiddleware("/ingest/run")(c)
 
-	// Registra en los logs que se recibió una solicitud para ejecutar la ingesta
 	log.Println("INFO: Received request to run ingestion.")
 
 	// Validar el parámetro 'since'
@@ -115,16 +110,13 @@ func (h *Handler) RunIngestion(c *gin.Context) {
 		}
 	}
 
-	// Registra en los logs que el proceso de ingesta se completó exitosamente
 	log.Printf("INFO: Ingestion process completed successfully. Processed %d metrics.", len(enrichedData))
 
-	// Devuelve una respuesta indicando que el proceso se completó
 	c.JSON(http.StatusAccepted, gin.H{"status": "Ingestion process completed successfully."})
 }
 
 // Readyz es un endpoint para verificar la disponibilidad del servicio
 func (h *Handler) Readyz(c *gin.Context) {
-	// Verifica si el repositorio está accesible
 	_, err := h.repo.GetAllMetrics()
 	if err != nil {
 		log.Printf("ERROR: Readiness check failed: %v", err)
@@ -137,7 +129,6 @@ func (h *Handler) Readyz(c *gin.Context) {
 
 // GetMetricsByChannel es el manejador para GET /metrics/channel.
 func (h *Handler) GetMetricsByChannel(c *gin.Context) {
-	// Middleware para registrar métricas de Prometheus
 	prometheusMiddleware("/metrics/channel")(c)
 
 	// Recuperar y validar los parámetros de consulta
@@ -185,13 +176,11 @@ func (h *Handler) GetMetricsByChannel(c *gin.Context) {
 		return
 	}
 
-	// Devolver las métricas en formato JSON
 	c.JSON(http.StatusOK, metrics)
 }
 
 // GetMetricsByFunnel es el manejador para el endpoint GET /metrics/funnel.
 func (h *Handler) GetMetricsByFunnel(c *gin.Context) {
-	// Middleware para registrar métricas de Prometheus
 	prometheusMiddleware("/metrics/funnel")(c)
 
 	// Recuperar y validar los parámetros de consulta
@@ -245,7 +234,6 @@ func (h *Handler) GetMetricsByFunnel(c *gin.Context) {
 
 // RunExport es el manejador para el endpoint POST /export/run.
 func (h *Handler) RunExport(c *gin.Context) {
-	// Middleware para registrar métricas de Prometheus
 	prometheusMiddleware("/export/run")(c)
 
 	log.Println("INFO: Received request to run export.")

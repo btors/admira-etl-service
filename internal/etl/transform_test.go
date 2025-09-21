@@ -9,7 +9,6 @@ import (
 )
 
 func TestCombineAndCalculateMetrics(t *testing.T) {
-	// Crea una nueva instancia del Transformer para realizar las pruebas.
 	transformer := NewTransformer()
 
 	// Datos de prueba para Ads.
@@ -46,12 +45,9 @@ func TestCombineAndCalculateMetrics(t *testing.T) {
 		},
 	}
 
-	// Ejecuta la función a probar
 	results, err := transformer.CombineAndCalculateMetrics(adsData, crmData)
 
-	// Aserciones: verificar que los resultados son los esperados
 	assert.NoError(t, err)
-	// Verifica que el resultado contenga exactamente un elemento.
 	assert.Len(t, results, 1)
 
 	// Verifica los valores calculados en la métrica enriquecida.

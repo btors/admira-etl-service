@@ -33,7 +33,6 @@ func NewExporter(sinkURL, sinkSecret string) *Exporter {
 
 // ExportMetrics envía un conjunto de métricas al sistema de destino utilizando HMAC-SHA256 para la autenticación.
 func (e *Exporter) ExportMetrics(metrics []data.EnrichedMetric) error {
-	// Verifica si la URL de destino está configurada.
 	if e.sinkURL == "" {
 		log.Println("WARN: SINK_URL not configured. Skipping export.")
 		return nil
@@ -46,9 +45,9 @@ func (e *Exporter) ExportMetrics(metrics []data.EnrichedMetric) error {
 	}
 
 	// 2. Calcula la firma HMAC-SHA256 del cuerpo de la solicitud.
-	mac := hmac.New(sha256.New, []byte(e.sinkSecret)) // Crea el HMAC con la clave secreta.
-	mac.Write(payload)                                // Escribe el payload en el HMAC.
-	signature := hex.EncodeToString(mac.Sum(nil))     // Convierte la firma a una cadena hexadecimal.
+	mac := hmac.New(sha256.New, []byte(e.sinkSecret))
+	mac.Write(payload)
+	signature := hex.EncodeToString(mac.Sum(nil))
 
 	// 3. Crea una nueva solicitud HTTP POST.
 	req, err := http.NewRequest("POST", e.sinkURL, bytes.NewBuffer(payload))

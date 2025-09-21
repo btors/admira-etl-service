@@ -21,8 +21,8 @@ type MetricRepository interface {
 
 // InMemoryRepository es una implementación del Repositorio que utiliza un mapa en memoria.
 type InMemoryRepository struct {
-	mu      sync.RWMutex              // Mutex para proteger el acceso concurrente al almacenamiento.
-	storage map[string]EnrichedMetric // Mapa que actúa como almacenamiento en memoria.
+	mu      sync.RWMutex
+	storage map[string]EnrichedMetric
 }
 
 // NewInMemoryRepository crea una nueva instancia del repositorio en memoria.
@@ -34,18 +34,18 @@ func NewInMemoryRepository() *InMemoryRepository {
 
 // Save guarda una métrica en el almacén en memoria de forma segura.
 func (r *InMemoryRepository) Save(metric EnrichedMetric) error {
-	r.mu.Lock()         // Bloquea el acceso para escritura.
-	defer r.mu.Unlock() // Desbloquea al finalizar.
+	r.mu.Lock()
+	defer r.mu.Unlock()
 	// Genera una clave única para la métrica basada en la fecha, ID de campaña y canal.
 	key := fmt.Sprintf("%s-%s-%s", metric.Date.Format("2006-01-02"), metric.CampaignID, metric.Channel)
-	r.storage[key] = metric // Guarda la métrica en el mapa.
+	r.storage[key] = metric
 	return nil
 }
 
 // GetMetricsByChannel obtiene métricas filtradas por canal y rango de fechas, con paginación.
 func (r *InMemoryRepository) GetMetricsByChannel(channel string, from, to time.Time, limit, offset int) ([]EnrichedMetric, error) {
-	r.mu.RLock()         // Bloquea el acceso para lectura.
-	defer r.mu.RUnlock() // Desbloquea al finalizar.
+	r.mu.RLock()
+	defer r.mu.RUnlock()
 
 	var filtered []EnrichedMetric
 	for _, m := range r.storage {
@@ -65,13 +65,13 @@ func (r *InMemoryRepository) GetMetricsByChannel(channel string, from, to time.T
 		end = len(filtered) // Asegura que el final no exceda el tamaño de la lista.
 	}
 
-	return filtered[start:end], nil // Devuelve el segmento paginado de métricas.
+	return filtered[start:end], nil
 }
 
 // GetMetricsByFunnel obtiene métricas filtradas por campaña UTM y rango de fechas, con paginación.
 func (r *InMemoryRepository) GetMetricsByFunnel(utmCampaign string, from, to time.Time, limit, offset int) ([]EnrichedMetric, error) {
-	r.mu.RLock()         // Bloquea el acceso para lectura.
-	defer r.mu.RUnlock() // Desbloquea al finalizar.
+	r.mu.RLock()
+	defer r.mu.RUnlock()
 
 	var filtered []EnrichedMetric
 	for _, m := range r.storage {
@@ -96,8 +96,8 @@ func (r *InMemoryRepository) GetMetricsByFunnel(utmCampaign string, from, to tim
 
 // GetAllMetrics devuelve todas las métricas almacenadas en el repositorio.
 func (r *InMemoryRepository) GetAllMetrics() ([]EnrichedMetric, error) {
-	r.mu.RLock()         // Bloquea el acceso para lectura.
-	defer r.mu.RUnlock() // Desbloquea al finalizar.
+	r.mu.RLock()
+	defer r.mu.RUnlock()
 
 	// Crea una lista para almacenar todas las métricas.
 	allMetrics := make([]EnrichedMetric, 0, len(r.storage))
