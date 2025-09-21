@@ -131,7 +131,7 @@ Consulta métricas agrupadas por campaña.
 Exporta los datos procesados al servicio configurado.
 - **POST** `/export/run`
     ```bash
-    curl -X POST http://localhost:8080/export/run
+    curl -X POST "http://localhost:8080/export/run?date=2025-08-01"
     ```
   **Response:**
     ```json
