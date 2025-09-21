@@ -1,31 +1,37 @@
+// Package config internal/config/config.go
 package config
 
 import (
-	"github.com/joho/godotenv"
 	"os"
+
+	"github.com/joho/godotenv"
 )
 
-// Config holds the configuration values
+// Config contiene los valores de configuración necesarios para la aplicación
 type Config struct {
-	Port      string
-	AdsAPIURL string
-	CrmAPIURL string
+	Port       string // Puerto en el que ejecutará el servidor
+	AdsAPIURL  string // URL de la API de anuncios
+	CrmAPIURL  string // URL de la API de CRM
+	SinkURL    string // URL del servicio SINK
+	SinkSecret string // Secreto para autenticar con el servicio SINK
 }
 
-// Load LoadConfig loads configuration from environment variables or .env file
+// Load carga la configuración desde variables de entorno o un archivo .env
 func Load() (*Config, error) {
-	// Load .env file if it exists
 	godotenv.Load()
 
+	// Inicializa la configuración con valores predeterminados o de las variables de entorno
 	cfg := &Config{
-		Port:      getEnv("PORT", "8080"),
-		AdsAPIURL: getEnv("ADS_API_URL", ""),
-		CrmAPIURL: getEnv("CRM_API_URL", ""),
+		Port:       getEnv("PORT", "8080"),
+		AdsAPIURL:  getEnv("ADS_API_URL", ""),
+		CrmAPIURL:  getEnv("CRM_API_URL", ""),
+		SinkURL:    getEnv("SINK_URL", ""),
+		SinkSecret: getEnv("SINK_SECRET", "admira_secret_example"),
 	}
 	return cfg, nil
 }
 
-// getEnv retrieves an environment variable or returns a default value
+// getEnv obtiene una variable de entorno o devuelve un valor predeterminado
 func getEnv(key, fallback string) string {
 	if value, ok := os.LookupEnv(key); ok {
 		return value

@@ -1,0 +1,15 @@
+# docker-compose.yml
+version: '3.8'
+
+services:
+  admira-etl:
+    build: .
+    ports:
+      - "8080:8080"
+    environment:
+      - ADS_API_URL=${ADS_API_URL}
+      - CRM_API_URL=${CRM_API_URL}
+      - SINK_URL=${SINK_URL}
+      - SINK_SECRET=${SINK_SECRET}
+    # Para ejecutar en producción
+    # restart: unless-stopped
