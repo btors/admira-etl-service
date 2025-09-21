@@ -32,3 +32,6 @@
 - El diseño desacopla la lógica de negocio de la persistencia mediante la interfaz `MetricRepository`, permitiendo migrar a una base de datos relacional, NoSQL o data lake sin modificar el pipeline ETL.
 - El sistema está preparado para exponer contratos de API versionados y para integrarse con otros sistemas del ecosistema Admira.
 - El pipeline es extensible: se pueden añadir nuevos orígenes de datos (nuevos conectores de Ads o CRM), nuevos destinos (otros sinks o data lakes), y nuevas métricas calculadas simplemente extendiendo los modelos y la lógica de transformación.
+
+## Refactorización y Principios SOLID/DRY
+- Antes de hacer mas modificaciones, sería ideal refactorizar el handler siguiendo los principios SOLID y DRY. Por ejemplo, extraer un MetricsUtils para todo lo relacionado a Phrometeus, un QueryUtils que exponga funciones para validar los query parameters, y extraer en servicios la logica de negocio.
